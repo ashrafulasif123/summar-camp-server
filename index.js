@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -8,6 +9,25 @@ const port = process.env.PORT || 5000;
 //middleware
 app.use(cors());
 app.use(express.json())
+
+// verify Token
+const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+  
+    if (!authorization) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' });
+    }
+    // bearer token
+    const token = authorization.split(' ')[1]
+  
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ error: true, message: 'unauthorozed' })
+      }
+      req.decoded = decoded;
+      next();
+    })
+  }
 
 
 //Mongodb Database Connect
@@ -25,8 +45,15 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        
+        // await client.connect();
+
+        //jwt token
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ token })
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
