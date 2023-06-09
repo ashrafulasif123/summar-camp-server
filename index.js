@@ -47,6 +47,9 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
 
+        // DATABASE COLLECTION
+        const usersSet = client.db('summarDB').collection('users');
+
         //jwt token
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -54,6 +57,27 @@ async function run() {
             res.send({ token })
         })
 
+        const verify = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            if (user?.role !== 'admin') {
+              return res.status(403).send({ error: true, message: 'forbidden message' })
+            }
+            next()
+          }
+        
+        // USER INFORMATION
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user?.email }
+            const existingUser = await usersSet.findOne(query)
+            if (existingUser) {
+              return res.send({ message: 'User already Exist' })
+            }
+            const result = await usersSet.insertOne(user)
+            res.send(result)
+          })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
