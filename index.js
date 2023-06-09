@@ -57,15 +57,15 @@ async function run() {
             res.send({ token })
         })
 
-        const verify = async (req, res, next) => {
-            const email = req.decoded.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            if (user?.role !== 'admin') {
-              return res.status(403).send({ error: true, message: 'forbidden message' })
-            }
-            next()
-          }
+        // const verifyInstructor = async (req, res, next) => {
+        //     const email = req.decoded.email;
+        //     const query = { email: email }
+        //     const user = await usersCollection.findOne(query)
+        //     if (user?.role !== 'instructor') {
+        //       return res.status(403).send({ error: true, message: 'forbidden message' })
+        //     }
+        //     next()
+        //   }
         
         // USER INFORMATION
         app.post('/users', async (req, res) => {
@@ -78,6 +78,31 @@ async function run() {
             const result = await usersSet.insertOne(user)
             res.send(result)
           })
+
+          // Instructor Query
+        //   app.get('/users/instructor', verifyJWT, verifyInstructor, async (req, res) => {
+        //     const result = await usersSet.find().toArray()
+        //     res.send(result)
+        //   })
+
+        // user total instructor
+        // app.get('/users/totalinstructor', async (req, res) => {
+        //     const role = req.query.role;
+        //     console.log(role)
+        //     if (!role) {
+        //       res.send([])
+        //     }
+        //     const query = { role: role };
+        //     const result = await usersSet.find(query).toArray()
+        //     res.send(result)
+        //   })
+
+        app.get('/users/totalinstructor',verifyJWT,  async (req, res) => {
+            const role = req.query.role;
+            const query = { role: role };
+            const result = await usersSet.find(query).toArray();
+            res.send(result);
+          });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
