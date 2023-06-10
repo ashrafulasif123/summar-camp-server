@@ -5,6 +5,10 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-close');
+  next();
+});
 
 //middleware
 app.use(cors());
@@ -49,6 +53,7 @@ async function run() {
 
         // DATABASE COLLECTION
         const usersSet = client.db('summarDB').collection('users');
+        const classSet = client.db('summarDB').collection('class');
 
         //jwt token
         app.post('/jwt', (req, res) => {
@@ -57,17 +62,17 @@ async function run() {
             res.send({ token })
         })
 
-        // const verifyInstructor = async (req, res, next) => {
-        //     const email = req.decoded.email;
-        //     const query = { email: email }
-        //     const user = await usersCollection.findOne(query)
-        //     if (user?.role !== 'instructor') {
-        //       return res.status(403).send({ error: true, message: 'forbidden message' })
-        //     }
-        //     next()
-        //   }
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersSet.findOne(query)
+            if (user?.role !== 'instructor') {
+              return res.status(403).send({ error: true, message: 'forbidden message' })
+            }
+            next()
+          }
         
-        // USER INFORMATION
+        // USER INFORMATION-----------------
         app.post('/users', async (req, res) => {
             const user = req.body;
             const query = { email: user?.email }
@@ -78,31 +83,58 @@ async function run() {
             const result = await usersSet.insertOne(user)
             res.send(result)
           })
-
-          // Instructor Query
-        //   app.get('/users/instructor', verifyJWT, verifyInstructor, async (req, res) => {
-        //     const result = await usersSet.find().toArray()
-        //     res.send(result)
-        //   })
-
-        // user total instructor
-        // app.get('/users/totalinstructor', async (req, res) => {
-        //     const role = req.query.role;
-        //     console.log(role)
-        //     if (!role) {
-        //       res.send([])
-        //     }
-        //     const query = { role: role };
-        //     const result = await usersSet.find(query).toArray()
-        //     res.send(result)
-        //   })
-
-        app.get('/users/totalinstructor',verifyJWT,  async (req, res) => {
+          // INSTRUCTOR-------------------
+          app.get('/users/totalinstructor',verifyJWT,  async (req, res) => {
             const role = req.query.role;
             const query = { role: role };
             const result = await usersSet.find(query).toArray();
             res.send(result);
           });
+
+          // verifyInstructor
+          app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersSet.findOne(query)
+            const result = { instructor: user?.role === 'instructor' }
+            res.send(result)
+          })
+
+          // Instructor Add Class
+          app.post('/users/instructor/addclass', verifyJWT,verifyInstructor, async (req, res) =>{
+            const summarClass = req.body;
+            const result = await classSet.insertOne(summarClass)
+            res.send(result)
+          })
+
+          // Instructor Class
+          app.get('/users/instractor/class', verifyJWT, async (req, res) =>{
+            const email = req.query.email;
+            if(!email){
+              return res.send([])
+            }
+            const query = {email: email}
+            const result = await classSet.find(query).toArray()
+            res.send(result)
+          } )
+
+
+
+          // ADMIN--------------------------
+          //verifyAdmin
+          app.get('/users/admin/:email', verifyJWT,  async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersSet.findOne(query)
+            const result = { admin: user?.role === 'admin' }
+            res.send(result)
+          })
+
+          // adminclass
+          app.get('/users/admin', verifyJWT, async (req, res) => {
+            const result = await classSet.find().toArray()
+            res.send(result)
+          })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
