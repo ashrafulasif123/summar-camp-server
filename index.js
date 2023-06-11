@@ -54,6 +54,7 @@ async function run() {
     // DATABASE COLLECTION
     const usersSet = client.db('summarDB').collection('users');
     const classSet = client.db('summarDB').collection('class');
+    const classCartSet = client.db('summarDB').collection('classcart')
 
     //jwt token
     app.post('/jwt', (req, res) => {
@@ -136,6 +137,12 @@ async function run() {
         return res.send({ message: 'User already Exist' })
       }
       const result = await usersSet.insertOne(user)
+      res.send(result)
+    })
+    // STUDENT CLASS CART
+    app.post('/classcart', verifyJWT, async(req, res) =>{
+      const classCart = req.body;
+      const result = await classCartSet.insertOne(classCart)
       res.send(result)
     })
     // INSTRUCTOR-------------------
