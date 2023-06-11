@@ -61,7 +61,7 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
       res.send({ token })
     })
-
+    // veirfyInstructor
     const verifyInstructor = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email }
@@ -72,7 +72,62 @@ async function run() {
       next()
     }
 
+    // verifyAdmin
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersSet.findOne(query)
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' })
+      }
+      next()
+    }
+
     // USER INFORMATION-----------------
+    app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersSet.find().toArray()
+      res.send(result)
+    })
+    // USER ROLE
+    app.patch('/users/instructorrole/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: {
+          role: 'instructor'
+        }
+      };
+      const result = await usersSet.updateOne(filter, updateDoc);
+      res.send(result)
+
+    })
+
+    app.patch('/users/adminrole/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: {
+          role: 'admin'
+        }
+      };
+      const result = await usersSet.updateOne(filter, updateDoc);
+      res.send(result)
+    })
+
+
+    // END USER INFORMATION-----------------
+
+    // CLASS INFORMATION
+    app.get('/classes', async(req, res) =>{
+      const approvedClass = req.query.status
+      if(!approvedClass){
+        return res.send([])
+      }
+      const query = {status : approvedClass}
+      const result = await classSet.find(query).toArray()
+      res.send(result)
+    })
+
     app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user?.email }
@@ -177,13 +232,13 @@ async function run() {
       const feedback = req.body;
       const filter = { _id: new ObjectId(id) }
       const updateDoc = {
-            $set: {
-              feedback: feedback
-            }
-          };
-             const result = await classSet.updateOne(filter, updateDoc);
-              res.send(result)
-        });
+        $set: {
+          feedback: feedback
+        }
+      };
+      const result = await classSet.updateOne(filter, updateDoc);
+      res.send(result)
+    });
 
 
     // Send a ping to confirm a successful connection
