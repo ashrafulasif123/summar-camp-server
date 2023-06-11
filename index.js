@@ -119,12 +119,12 @@ async function run() {
     // END USER INFORMATION-----------------
 
     // CLASS INFORMATION
-    app.get('/classes', async(req, res) =>{
+    app.get('/classes', async (req, res) => {
       const approvedClass = req.query.status
-      if(!approvedClass){
+      if (!approvedClass) {
         return res.send([])
       }
-      const query = {status : approvedClass}
+      const query = { status: approvedClass }
       const result = await classSet.find(query).toArray()
       res.send(result)
     })
@@ -139,12 +139,21 @@ async function run() {
       const result = await usersSet.insertOne(user)
       res.send(result)
     })
-    // STUDENT CLASS CART
-    app.post('/classcart', verifyJWT, async(req, res) =>{
+    
+    app.post('/classcart', verifyJWT, async (req, res) => {
       const classCart = req.body;
-      const result = await classCartSet.insertOne(classCart)
-      res.send(result)
-    })
+      const classname = classCart.classname;
+      const useremail = classCart.useremail;
+      const query = {classname, useremail}
+      const existclass = await classCartSet.findOne(query);
+       if (existclass) {
+        return res.send({ message: 'class is already exist' });
+      }
+
+      const result = await classCartSet.insertOne(classCart);
+      res.send(result);
+    });
+
     // INSTRUCTOR-------------------
     app.get('/users/totalinstructor', verifyJWT, async (req, res) => {
       const role = req.query.role;
