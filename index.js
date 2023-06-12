@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const stripe = require('stripe')('sk_test_51NFog6BhopzNm0k1nOEu5NviBteWiakAVKVQ6IludC3X04b9jkzfveV1AwGMKLLMIdNmmAcz2Z4P9rsPBSIFZQWw00n5Q9ynps');
 const jwt = require('jsonwebtoken');
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
@@ -149,11 +151,24 @@ async function run() {
        if (existclass) {
         return res.send({ message: 'class is already exist' });
       }
-
       const result = await classCartSet.insertOne(classCart);
       res.send(result);
     });
 
+    app.get('/classcart', verifyJWT, async(req, res) =>{
+      const useremail = req.query.email;
+      // console.log(email)
+      const query = {useremail : useremail}
+      const result = await classCartSet.find(query).toArray()
+      res.send(result)
+    })
+
+    app.delete('/classcart/:id', verifyJWT , async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await classCartSet.deleteOne(query)
+      res.send(result)
+    })
     // INSTRUCTOR-------------------
     app.get('/users/totalinstructor', verifyJWT, async (req, res) => {
       const role = req.query.role;
@@ -231,18 +246,7 @@ async function run() {
       const result = await classSet.updateOne(filter, updateDoc);
       res.send(result)
     })
-    // admin feedback
-    // app.patch('/users/adminfeedback/:id', async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) }
-    //   const updateDoc = {
-    //     $set: {
-    //       status: 'denied'
-    //     }
-    //   };
-    //   const result = await classSet.updateOne(filter, updateDoc);
-    //   res.send(result)
-    // })
+    
     app.patch('/users/adminfeedback/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const feedback = req.body;
@@ -255,7 +259,20 @@ async function run() {
       const result = await classSet.updateOne(filter, updateDoc);
       res.send(result)
     });
+    // create payment intent
+    app.post('/create-payment-intent', verifyJWT, async (req, res) =>{
+      const {price} = req.body;
+      const amount = price*100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
 
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
