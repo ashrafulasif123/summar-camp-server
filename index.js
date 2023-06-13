@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const stripe = require('stripe')('sk_test_51NFog6BhopzNm0k1nOEu5NviBteWiakAVKVQ6IludC3X04b9jkzfveV1AwGMKLLMIdNmmAcz2Z4P9rsPBSIFZQWw00n5Q9ynps');
 const jwt = require('jsonwebtoken');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
+const stripe = require("stripe")(process.env.GIVING_SECRET_KEY)
 const app = express();
 const port = process.env.PORT || 5000;
 app.use((req, res, next) => {
