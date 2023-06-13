@@ -131,6 +131,16 @@ async function run() {
       const result = await classSet.find(query).toArray()
       res.send(result)
     })
+    //--Popular Classes
+    app.get('/popularclasses', async (req, res) =>{
+      const popularclass = req.query.status
+      if(!popularclass){
+        return res.send([])
+      }
+      const query = {status : popularclass}
+      const result = await classSet.find(query).sort({enrolledstudent : -1}).toArray()
+      res.send(result)
+    })
 
     app.post('/users', async (req, res) => {
       const user = req.body;
@@ -280,7 +290,22 @@ async function run() {
       const insertResult = await paymentCollection.insertOne(payment)
       const query = { _id: { $in: payment.selectedclasses.map(id => new ObjectId(id)) } }
       const deleteResult = await classCartSet.deleteMany(query);
-      res.send({ insertResult, deleteResult })
+      const classQuery = { _id: { $in: payment.classId.map(id => new ObjectId(id)) } }
+      const modifiedClasses = await classSet.updateMany(classQuery, {
+        $inc:{
+          enrolledstudent: 1, seats: -1
+        }
+      }, {upsert: true})
+      res.send({ insertResult, deleteResult, modifiedClasses })
+    })
+    app.get('/payments' , verifyJWT, async(req, res) =>{
+      const email = req.query.email;
+      if(!email){
+        return res.send({message: 'Email not Found'})
+      }
+      const query = {email: email}
+      const result = await paymentCollection.find(query).sort({ date: -1 }).toArray()
+      res.send(result)
     })
 
     // Send a ping to confirm a successful connection
