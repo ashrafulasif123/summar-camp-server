@@ -57,6 +57,7 @@ async function run() {
     const usersSet = client.db('summarDB').collection('users');
     const classSet = client.db('summarDB').collection('class');
     const classCartSet = client.db('summarDB').collection('classcart')
+    const paymentCollection = client.db('summarDB').collection('payments')
 
     //jwt token
     app.post('/jwt', (req, res) => {
@@ -170,7 +171,7 @@ async function run() {
       res.send(result)
     })
     // INSTRUCTOR-------------------
-    app.get('/users/totalinstructor', verifyJWT, async (req, res) => {
+    app.get('/users/totalinstructor', async (req, res) => {
       const role = req.query.role;
       const query = { role: role };
       const result = await usersSet.find(query).toArray();
@@ -272,6 +273,14 @@ async function run() {
         clientSecret: paymentIntent.client_secret
       })
 
+    })
+    // payment related api
+    app.post('/payments', verifyJWT, async(req, res) =>{
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment)
+      const query = { _id: { $in: payment.selectedclasses.map(id => new ObjectId(id)) } }
+      const deleteResult = await classCartSet.deleteMany(query);
+      res.send({ insertResult, deleteResult })
     })
 
     // Send a ping to confirm a successful connection
