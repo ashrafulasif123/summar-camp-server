@@ -13,7 +13,12 @@ app.use((req, res, next) => {
 });
 
 //middleware
-app.use(cors());
+const corsOptions ={
+  origin:'*',
+  credentials:true,
+  optionSuccessStatus:200,
+  }
+  app.use(cors(corsOptions))
 app.use(express.json())
 
 // verify Token
@@ -174,6 +179,14 @@ async function run() {
       res.send(result)
     })
 
+    // Enrolled Student
+    app.get('/enrolled', verifyJWT, async(req, res) =>{
+      const email = req.query.email;
+      const query = {email : email}
+      const result = await paymentCollection.find(query).toArray()
+      res.send(result)
+    } ) 
+
     app.delete('/classcart/:id', verifyJWT , async(req, res) =>{
       const id = req.params.id;
       const query = {_id: new ObjectId(id)}
@@ -311,7 +324,7 @@ async function run() {
     })
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully Connected Summar Camp Database");
   } finally {
     // Ensures that the client will close when you finish/error
